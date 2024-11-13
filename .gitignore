@@ -1,0 +1,41 @@
+# Diretórios e arquivos do Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+.env/
+*.env
+
+# Arquivos de log
+*.log
+
+# Dependências instaladas
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Arquivos de IDEs
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Arquivos de banco de dados
+*.sqlite3
+
+# Configuração de cache e compilação
+.cache/
+.pytest_cache/
+*.coverage
+htmlcov/
+
+# Arquivos de CSV, caso sejam gerados dinamicamente ou temporários
+*.csv
+
+# Arquivos temporários
+*.tmp
+*.temp
+.DS_Store
