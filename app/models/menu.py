@@ -1,8 +1,11 @@
 from pydantic import BaseModel
 
-class MenuItem(BaseModel):
+class MenuItemCreate(BaseModel):
     nome: str
     descricao: str
     preco: float
-    tipo: str  #'bebida', 'sobremesa...'
+    tipo: str
     disponivel: bool
+
+class MenuItem(MenuItemCreate):
+    id: int
