@@ -92,3 +92,26 @@ def compactar_csv():
         return {"message": "CSV compactado com sucesso"}
     except Exception as e:
         raise RuntimeError(f"Erro ao compactar CSV: {e}")
+    
+def buscar_item_por_id(item_id: int):
+    try:
+        if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Menu vazio")
+
+        # Lê o CSV
+        df = pd.read_csv(MENU_FILE)
+
+        # Busca o item pelo ID
+        item = df.loc[df["id"] == item_id]
+
+        # Verifica se o item foi encontrado
+        if item.empty:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Item não encontrado")
+
+        # Retorna o item encontrado
+        return item.to_dict(orient="records")[0]
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise RuntimeError(f"Erro ao obter item do menu: {e}")
