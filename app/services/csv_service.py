@@ -1,5 +1,4 @@
-import csv
-import os
+import csv, os
 from app.models.menu import MenuItem
 
 MENU_FILE = "app/data/menu.csv"
@@ -25,7 +24,6 @@ def criar_menu_item(item: MenuItem):
     except Exception as e:
         raise RuntimeError(f"Erro ao criar item no menu: {e}")
 
-
 def listar_menu_items():
     items = []
     try:
@@ -38,14 +36,7 @@ def listar_menu_items():
             for item in reader:
                 if len(item) != 6:
                     continue
-                items.append(MenuItem(
-                    id=int(item[0]),
-                    nome=item[1],
-                    descricao=item[2],
-                    preco=float(item[3]),
-                    tipo=item[4],
-                    disponivel=item[5].lower() == 'true'
-                ))
+                items.append(MenuItem(id=int(item[0]), nome=item[1], descricao=item[2], preco=float(item[3]), tipo=item[4], disponivel=item[5].lower() == 'true'))
     except FileNotFoundError:
         return items
     except Exception as e:
