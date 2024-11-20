@@ -1,4 +1,4 @@
-import os, zipfile
+import os, zipfile, hashlib
 import pandas as pd
 from app.models.menu import MenuItem
 from fastapi import HTTPException
@@ -111,3 +111,16 @@ def buscar_item_por_id(item_id: int):
         raise e
     except Exception as e:
         raise RuntimeError(f"Erro ao obter item do menu: {e}")
+    
+def obter_menu_hash():
+    try:
+        if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Menu vazio")
+
+        sha256_hash = hashlib.sha256()
+        with open("app/data/menu.csv", "rb") as f:
+            for byte_block in iter(lambda: f.read(4096), b""):
+                sha256_hash.update(byte_block)
+        return {"hash": sha256_hash.hexdigest()}
+    except HTTPException as e:
+        raise e

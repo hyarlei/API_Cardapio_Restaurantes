@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 from app.models.menu import MenuItem
-from app.services.csv_service import criar_menu_item, listar_menu_items, atualizar_menu_item, remover_item, compactar_csv, buscar_item_por_id
+from app.services.csv_service import criar_menu_item, listar_menu_items, atualizar_menu_item, remover_item, compactar_csv, buscar_item_por_id, obter_menu_hash
 
 router = APIRouter()
 
@@ -32,3 +32,7 @@ async def compactar_menu_csv():
 @router.get("/{item_id}")
 async def obter_menu_item(item_id: int):
     return buscar_item_por_id(item_id)
+
+@router.get("/hash-csv")
+async def obter_menu_hash_csv():
+    return obter_menu_hash()
