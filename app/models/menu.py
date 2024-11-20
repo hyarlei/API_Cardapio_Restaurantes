@@ -1,11 +1,9 @@
 from pydantic import BaseModel
 
-class MenuItemCreate(BaseModel):
+class MenuItem(BaseModel):
+    id: int | None = None
     nome: str
     descricao: str
     preco: float
     tipo: str
     disponivel: bool
-
-class MenuItem(MenuItemCreate):
-    id: int

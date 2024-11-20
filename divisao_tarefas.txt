@@ -1,0 +1,11 @@
+Hyarlei:
+    - Arquitetura
+    - CREATE
+    - RETRIEVE
+    - 
+
+Adailton:
+    - UPDATE
+    - DELETE
+    - Compactar CSV
+    - 

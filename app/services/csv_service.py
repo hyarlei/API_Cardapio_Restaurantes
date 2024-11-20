@@ -1,44 +1,85 @@
-import csv, os
+import os, zipfile
+import pandas as pd
 from app.models.menu import MenuItem
+from fastapi import HTTPException
+from http import HTTPStatus
 
 MENU_FILE = "app/data/menu.csv"
 
-def criar_menu_item(item: MenuItem):
+def criar_menu_item(menu_item: MenuItem):
     try:
-        novo_id = 1
+        id = 0
         if os.path.exists(MENU_FILE):
-            with open(MENU_FILE, "r", newline='', encoding="utf-8") as csvfile:
-                reader = csv.reader(csvfile)
-                next(reader, None)
-                ids = [int(item[0]) for item in reader if item and item[0].isdigit()]
-                novo_id = max(ids, default=0) + 1
+            df = pd.read_csv(MENU_FILE, index_col=False)
+            id = int(df["id"].max() + 1)
+        menu_item.id = id
+        df = pd.DataFrame(menu_item.model_dump(), index=[0])
 
-        with open(MENU_FILE, "a", newline='', encoding="utf-8") as csvfile:
-            writer = csv.writer(csvfile)
-            
-            if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
-                writer.writerow(["id", "nome", "descricao", "preco", "tipo", "disponivel"])
-            writer.writerow([novo_id, item.nome, item.descricao, item.preco, item.tipo, item.disponivel])
-        return {"id": novo_id, "message": "Item criado com sucesso"}
+        if not os.path.exists(MENU_FILE):
+            os.mkdir(os.path.dirname(MENU_FILE))
+            df.to_csv(MENU_FILE, index=False, header=True)
+        else:
+            df.to_csv(MENU_FILE, mode='a', index=False, header=False)
 
+        return {"id": menu_item.id, "message": "Item criado com sucesso"}
     except Exception as e:
-        raise RuntimeError(f"Erro ao criar item no menu: {e}")
+        raise RuntimeError(f"Erro ao criar item do menu: {e}")
 
 def listar_menu_items():
-    items = []
     try:
         if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
-            return items
+            return []
 
-        with open(MENU_FILE, newline='', encoding="utf-8") as csvfile:
-            reader = csv.reader(csvfile)
-            next(reader, None)
-            for item in reader:
-                if len(item) != 6:
-                    continue
-                items.append(MenuItem(id=int(item[0]), nome=item[1], descricao=item[2], preco=float(item[3]), tipo=item[4], disponivel=item[5].lower() == 'true'))
-    except FileNotFoundError:
+        df = pd.read_csv(MENU_FILE)
+        items = []
+        for _, item in df.iterrows():
+            items.append(MenuItem(id=int(item["id"]), nome=item["nome"], descricao=item["descricao"], preco=float(item["preco"]), tipo=item["tipo"], disponivel=item["disponivel"]))
+
         return items
     except Exception as e:
         raise RuntimeError(f"Erro ao listar itens do menu: {e}")
-    return items
+    
+def atualizar_menu_item(item_id: int, item_atualizado: MenuItem):
+    try:
+        if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Menu vazio")
+        
+        df = pd.read_csv(MENU_FILE)
+        item = df.loc[df["id"] == item_id]
+        if item.empty:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Item não encontrado")
+        
+        item_atualizado.id = item_id
+        df.loc[df["id"] == item_id] = list(item_atualizado.model_dump().values())
+        df.to_csv(MENU_FILE, index=False)
+        return {"message": "Item atualizado com sucesso"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise RuntimeError(f"Erro ao atualizar item do menu: {e}")
+    
+def remover_menu_item(item_id: int):
+    try:
+        if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Menu vazio")
+        
+        df = pd.read_csv(MENU_FILE)
+        item = df.loc[df["id"] == item_id]
+        if item.empty:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Item não encontrado")
+        
+        df = df.drop(df[df["id"] == item_id].index)
+        df.to_csv(MENU_FILE, index=False)
+        return {"message": "Item removido com sucesso"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise RuntimeError(f"Erro ao remover item do menu: {e}")
+    
+def compactar_csv():
+    try:
+        with zipfile.ZipFile("app/data/menu.zip", "w") as zip:
+            zip.write(MENU_FILE, os.path.basename(MENU_FILE))
+        return {"message": "CSV compactado com sucesso"}
+    except Exception as e:
+        raise RuntimeError(f"Erro ao compactar CSV: {e}")

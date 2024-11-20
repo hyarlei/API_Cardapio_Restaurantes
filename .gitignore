@@ -34,6 +34,7 @@ htmlcov/
 
 # Arquivos de CSV, caso sejam gerados dinamicamente ou temporários
 *.csv
+*.zip
 
 # Arquivos temporários
 *.tmp
