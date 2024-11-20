@@ -124,3 +124,17 @@ def obter_menu_hash():
         return {"hash": sha256_hash.hexdigest()}
     except HTTPException as e:
         raise e
+
+def contar_itens_menu():
+    try:
+        if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
+            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Menu vazio")
+
+        df = pd.read_csv(MENU_FILE)
+
+        quantidade = len(df)
+
+        return {"quantidade_itens": quantidade}
+
+    except Exception as e:
+        raise RuntimeError(f"Erro ao contar itens do menu: {e}")
