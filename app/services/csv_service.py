@@ -9,19 +9,28 @@ MENU_FILE = "app/data/menu.csv"
 def criar_menu_item(menu_item: MenuItem):
     try:
         id = 0
-        if os.path.exists(MENU_FILE):
-            df = pd.read_csv(MENU_FILE, index_col=False)
-            id = int(df["id"].max() + 1)
-        menu_item.id = id
-        df = pd.DataFrame(menu_item.model_dump(), index=[0])
 
-        if not os.path.exists(MENU_FILE):
-            os.mkdir(os.path.dirname(MENU_FILE))
-            df.to_csv(MENU_FILE, index=False, header=True)
+        if os.path.exists(MENU_FILE) and os.path.getsize(MENU_FILE) > 0:
+            try:
+                df = pd.read_csv(MENU_FILE, index_col=False)
+                if not df.empty and "id" in df.columns:
+                    id = int(df["id"].max() + 1)
+            except pd.errors.EmptyDataError:
+                df = pd.DataFrame()
         else:
-            df.to_csv(MENU_FILE, mode='a', index=False, header=False)
+            df = pd.DataFrame()
+
+        menu_item.id = id
+        novo_item_df = pd.DataFrame([menu_item.model_dump()])
+
+        if not os.path.exists(MENU_FILE) or os.path.getsize(MENU_FILE) == 0:
+            os.makedirs(os.path.dirname(MENU_FILE), exist_ok=True)
+            novo_item_df.to_csv(MENU_FILE, index=False, header=True)
+        else:
+            novo_item_df.to_csv(MENU_FILE, mode='a', index=False, header=False)
 
         return {"id": menu_item.id, "message": "Item criado com sucesso"}
+
     except Exception as e:
         raise RuntimeError(f"Erro ao criar item do menu: {e}")
 
