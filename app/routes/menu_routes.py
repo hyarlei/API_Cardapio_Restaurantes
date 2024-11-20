@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
 from app.models.menu import MenuItem
-from app.services.csv_service import criar_menu_item, listar_menu_items, atualizar_menu_item, remover_menu_item, compactar_csv, buscar_item_por_id
+from app.services.csv_service import criar_menu_item, listar_menu_items, atualizar_menu_item, remover_item, compactar_csv, buscar_item_por_id
 
 router = APIRouter()
 
@@ -21,7 +21,7 @@ async def modificar_menu_item(item_id: int, item_atualizado: MenuItem):
 
 @router.delete("/{item_id}")
 async def remover_menu_item(item_id: int):
-    remover_menu_item(item_id)
+    remover_item(item_id)
     return {"message": "Item removido do menu"}
 
 @router.get("/compactar-csv")

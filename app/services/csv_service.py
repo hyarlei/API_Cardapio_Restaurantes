@@ -67,7 +67,7 @@ def atualizar_menu_item(item_id: int, item_atualizado: MenuItem):
     except Exception as e:
         raise RuntimeError(f"Erro ao atualizar item do menu: {e}")
     
-def remover_menu_item(item_id: int):
+def remover_item(item_id: int):
     try:
         if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
             raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Menu vazio")
