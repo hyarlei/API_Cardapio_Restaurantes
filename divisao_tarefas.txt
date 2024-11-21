@@ -2,10 +2,10 @@ Hyarlei:
     - Arquitetura
     - CREATE
     - RETRIEVE
-    - 
+    - F4
 
 Adailton:
     - UPDATE
     - DELETE
     - Compactar CSV
-    - 
+    - F6
