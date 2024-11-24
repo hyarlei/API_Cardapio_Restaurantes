@@ -1,11 +1,11 @@
 id,nome,descricao,preco,tipo,disponivel
-0,Picanha,Picanha ao molho da casa,120.0,Carne,True
-1,Pizza Margherita,"Massa artesanal, molho de tomate, queijo mussarela, manjericão fresco.",32.5,Pizza,True
-2,Hambúrguer Clássico,"Pão brioche, carne bovina 180g, queijo cheddar, alface, tomate, molho especial.",25.0,Sanduíche,True
-3,Spaghetti Carbonara,"Massa italiana com molho à base de ovos, parmesão, pancetta e pimenta do reino.",28.9,Massas,True
-4,Caesar Salad,"Alface romana, croutons, queijo parmesão, molho caesar caseiro.",18.9,Salada,True
-5,Filé Mignon ao Molho Madeira,Filé mignon grelhado com molho madeira e guarnição de legumes.,55.0,Carne,False
-6,Frango à Parmegiana,"Peito de frango empanado, molho de tomate, queijo gratinado, servido com arroz e batata frita.",34.5,Aves,True
-7,Salmão Grelhado,"Salmão grelhado com crosta de ervas, acompanhado de purê de batata doce.",42.0,Peixe,True
-8,Brownie com Sorvete,Brownie de chocolate servido com sorvete de creme e calda quente de chocolate.,16.9,Sobremesa,True
-9,Suco de Laranja Natural,"Suco fresco de laranja, sem açúcar.",8.5,Bebida,True
+0,Picanha,Picanha ao molho da casa,120.0,principal,True
+1,Pizza Margherita,"Massa artesanal, molho de tomate, queijo mussarela, manjericão fresco.",32.5,principal,True
+2,Hambúrguer Clássico,"Pão brioche, carne bovina 180g, queijo cheddar, alface, tomate, molho especial.",25.0,principal,True
+3,Spaghetti Carbonara,"Massa italiana com molho à base de ovos, parmesão, pancetta e pimenta do reino.",28.9,principal,True
+4,Caesar Salad,"Alface romana, croutons, queijo parmesão, molho caesar caseiro.",18.9,principal,True
+5,Filé Mignon ao Molho Madeira,Filé mignon grelhado com molho madeira e guarnição de legumes.,55.0,principal,False
+6,Frango à Parmegiana,"Peito de frango empanado, molho de tomate, queijo gratinado, servido com arroz e batata frita.",34.5,principal,True
+7,Salmão Grelhado,"Salmão grelhado com crosta de ervas, acompanhado de purê de batata doce.",42.0,principal,True
+8,Brownie com Sorvete,Brownie de chocolate servido com sorvete de creme e calda quente de chocolate.,16.9,principal,True
+9,Suco de Laranja Natural,"Suco fresco de laranja, sem açúcar.",8.5,principal,True
