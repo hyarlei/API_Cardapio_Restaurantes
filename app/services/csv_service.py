@@ -1,165 +1,181 @@
-import os
-import zipfile
-import hashlib
-import pandas as pd
-from app.models.menu import MenuItem
+import sqlite3
 from fastapi import HTTPException
 from http import HTTPStatus
+from app.models.menu import MenuItem
+import hashlib
+import zipfile
+import os
 
-MENU_FILE = "app/data/menu.csv"
+DB_FILE = "app/data/menu.db"
+
+# Inicializar o banco de dados (chamado no startup da aplicação)
+def init_db():
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS menu (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT NOT NULL,
+                descricao TEXT NOT NULL,
+                preco REAL NOT NULL,
+                tipo TEXT NOT NULL,
+                disponivel BOOLEAN NOT NULL
+            )
+        """)
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        raise RuntimeError(f"Erro ao inicializar o banco de dados: {e}")
 
 
 def criar_menu_item(menu_item: MenuItem):
     try:
-        id = 0
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
 
-        if os.path.exists(MENU_FILE) and os.path.getsize(MENU_FILE) > 0:
-            try:
-                df = pd.read_csv(MENU_FILE, index_col=False)
-                if not df.empty and "id" in df.columns:
-                    id = int(df["id"].max() + 1)
-            except pd.errors.EmptyDataError:
-                df = pd.DataFrame()
-        else:
-            df = pd.DataFrame()
+        cursor.execute("""
+            INSERT INTO menu (nome, descricao, preco, tipo, disponivel)
+            VALUES (?, ?, ?, ?, ?)
+        """, (menu_item.nome, menu_item.descricao, menu_item.preco, menu_item.tipo, menu_item.disponivel))
+        conn.commit()
 
-        menu_item.id = id
-        novo_item_df = pd.DataFrame([menu_item.model_dump()])
-
-        if not os.path.exists(MENU_FILE) or os.path.getsize(MENU_FILE) == 0:
-            os.makedirs(os.path.dirname(MENU_FILE), exist_ok=True)
-            novo_item_df.to_csv(MENU_FILE, index=False, header=True)
-        else:
-            novo_item_df.to_csv(MENU_FILE, mode="a", index=False, header=False)
+        menu_item.id = cursor.lastrowid
+        conn.close()
 
         return {"id": menu_item.id, "message": "Item criado com sucesso"}
-
     except Exception as e:
         raise RuntimeError(f"Erro ao criar item do menu: {e}")
 
 
 def listar_menu_items():
     try:
-        if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
-            return []
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
 
-        df = pd.read_csv(MENU_FILE)
-        items = []
-        for _, item in df.iterrows():
-            items.append(
-                MenuItem(
-                    id=int(item["id"]),
-                    nome=item["nome"],
-                    descricao=item["descricao"],
-                    preco=float(item["preco"]),
-                    tipo=item["tipo"],
-                    disponivel=item["disponivel"],
-                )
+        cursor.execute("SELECT * FROM menu")
+        rows = cursor.fetchall()
+        conn.close()
+
+        items = [
+            MenuItem(
+                id=row[0],
+                nome=row[1],
+                descricao=row[2],
+                preco=row[3],
+                tipo=row[4],
+                disponivel=row[5]
             )
-
+            for row in rows
+        ]
         return items
     except Exception as e:
         raise RuntimeError(f"Erro ao listar itens do menu: {e}")
 
 
-def atualizar_menu_item(item_id: int, item_atualizado: MenuItem):
+def buscar_item_por_id(item_id: int):
     try:
-        if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
-            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Menu vazio")
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
 
-        df = pd.read_csv(MENU_FILE)
-        item = df.loc[df["id"] == item_id]
-        if item.empty:
+        cursor.execute("SELECT * FROM menu WHERE id = ?", (item_id,))
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail="Item não encontrado"
             )
 
-        item_atualizado.id = item_id
-        df.loc[df["id"] == item_id] = list(item_atualizado.model_dump().values())
-        df.to_csv(MENU_FILE, index=False)
+        return MenuItem(
+            id=row[0],
+            nome=row[1],
+            descricao=row[2],
+            preco=row[3],
+            tipo=row[4],
+            disponivel=row[5]
+        )
+    except Exception as e:
+        raise RuntimeError(f"Erro ao obter item do menu: {e}")
+
+
+def atualizar_menu_item(item_id: int, item_atualizado: MenuItem):
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM menu WHERE id = ?", (item_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND, detail="Item não encontrado"
+            )
+
+        cursor.execute("""
+            UPDATE menu
+            SET nome = ?, descricao = ?, preco = ?, tipo = ?, disponivel = ?
+            WHERE id = ?
+        """, (item_atualizado.nome, item_atualizado.descricao, item_atualizado.preco, item_atualizado.tipo, item_atualizado.disponivel, item_id))
+        conn.commit()
+        conn.close()
+
         return {"message": "Item atualizado com sucesso"}
-    except HTTPException as e:
-        raise e
     except Exception as e:
         raise RuntimeError(f"Erro ao atualizar item do menu: {e}")
 
 
 def remover_item(item_id: int):
     try:
-        if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
-            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Menu vazio")
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
 
-        df = pd.read_csv(MENU_FILE)
-        item = df.loc[df["id"] == item_id]
-        if item.empty:
+        cursor.execute("SELECT * FROM menu WHERE id = ?", (item_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail="Item não encontrado"
             )
 
-        df = df.drop(df[df["id"] == item_id].index)
-        df.to_csv(MENU_FILE, index=False)
+        cursor.execute("DELETE FROM menu WHERE id = ?", (item_id,))
+        conn.commit()
+        conn.close()
+
         return {"message": "Item removido com sucesso"}
-    except HTTPException as e:
-        raise e
     except Exception as e:
         raise RuntimeError(f"Erro ao remover item do menu: {e}")
 
 
-def compactar_csv():
+def contar_itens_menu():
     try:
-        with zipfile.ZipFile("app/data/menu.zip", "w") as zip:
-            zip.write(MENU_FILE, os.path.basename(MENU_FILE))
-        return {"message": "CSV compactado com sucesso"}
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM menu")
+        count = cursor.fetchone()[0]
+        conn.close()
+
+        return {"quantidade_itens": count}
     except Exception as e:
-        raise RuntimeError(f"Erro ao compactar CSV: {e}")
-
-
-def buscar_item_por_id(item_id: int):
-    try:
-        if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
-            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Menu vazio")
-
-        df = pd.read_csv(MENU_FILE)
-
-        item = df.loc[df["id"] == item_id]
-
-        if item.empty:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND, detail="Item não encontrado"
-            )
-
-        return item.to_dict(orient="records")[0]
-
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise RuntimeError(f"Erro ao obter item do menu: {e}")
+        raise RuntimeError(f"Erro ao contar itens do menu: {e}")
 
 
 def obter_menu_hash():
     try:
-        if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
-            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Menu vazio")
-
         sha256_hash = hashlib.sha256()
-        with open("app/data/menu.csv", "rb") as f:
+        with open(DB_FILE, "rb") as f:
             for byte_block in iter(lambda: f.read(4096), b""):
                 sha256_hash.update(byte_block)
         return {"hash": sha256_hash.hexdigest()}
-    except HTTPException as e:
-        raise e
-
-
-def contar_itens_menu():
-    try:
-        if not os.path.exists(MENU_FILE) or os.stat(MENU_FILE).st_size == 0:
-            raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Menu vazio")
-
-        df = pd.read_csv(MENU_FILE)
-
-        quantidade = len(df)
-
-        return {"quantidade_itens": quantidade}
-
     except Exception as e:
-        raise RuntimeError(f"Erro ao contar itens do menu: {e}")
+        raise RuntimeError(f"Erro ao calcular hash do menu: {e}")
+
+
+def compactar_db():
+    try:
+        with zipfile.ZipFile("app/data/menu.zip", "w") as zip:
+            zip.write(DB_FILE, os.path.basename(DB_FILE))
+        return {"message": "Banco de dados compactado com sucesso"}
+    except Exception as e:
+        raise RuntimeError(f"Erro ao compactar banco de dados: {e}")
