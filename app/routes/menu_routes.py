@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session
+from datetime import datetime
 from app.db import get_session
 from app.services.menu_sevice import (
     criar_menu_item,
@@ -7,8 +8,8 @@ from app.services.menu_sevice import (
     buscar_menu_item,
     atualizar_menu_item,
     remover_menu_item,
-    contar_menu_items
 )
+from app.models.menu import Menu
 
 router = APIRouter()
 
@@ -24,9 +25,17 @@ async def read_menu(item_id: int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Item não encontrado")
     return item
 
-@router.get("/", status_code=status.HTTP_200_OK)
-async def read_menu_items(session: Session = Depends(get_session)):
-    return listar_menu_items(session)
+@router.get("/", status_code=status.HTTP_200_OK, response_model=list[Menu])
+async def read_clientes(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(10, le=100),
+    ano: int = Query(None, ge=1900, le=datetime.now().year),
+    titulo: str = Query(None),
+    tipo: str = Query(None),
+    order_by: str = Query("id"),
+    session: Session = Depends(get_session)
+):
+    return listar_menu_items(session, offset=offset, limit=limit, ano=ano, titulo=titulo, tipo=tipo, order_by=order_by)
 
 @router.put("/{item_id}", status_code=status.HTTP_200_OK)
 async def update_menu(item_id: int, menu_data: dict, session: Session = Depends(get_session)):
@@ -41,7 +50,3 @@ async def delete_menu(item_id: int, session: Session = Depends(get_session)):
     if item is None:
         raise HTTPException(status_code=404, detail="Item não encontrado")
     return {"message": "Item removido com sucesso"}
-
-@router.get("/contar", status_code=status.HTTP_200_OK)
-async def count_menu_items(session: Session = Depends(get_session)):
-    return {"quantidade": contar_menu_items(session)}

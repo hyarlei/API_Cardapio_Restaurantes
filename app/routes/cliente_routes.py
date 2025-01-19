@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session
 from app.db import get_session
 from app.services.cliente_service import (
@@ -8,6 +8,7 @@ from app.services.cliente_service import (
     atualizar_cliente,
     remover_cliente
 )
+from app.models.cliente import Cliente
 
 router = APIRouter()
 
@@ -23,9 +24,14 @@ async def read_cliente(cliente_id: int, session: Session = Depends(get_session))
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
     return cliente
 
-@router.get("/", status_code=status.HTTP_200_OK)
-async def read_clientes(session: Session = Depends(get_session)):
-    return listar_clientes(session)
+@router.get("/", status_code=status.HTTP_200_OK, response_model=list[Cliente])
+async def read_clientes(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(10, le=100),
+    titulo: str = Query(None),
+    session: Session = Depends(get_session)
+):
+    return listar_clientes(session, offset=offset, limit=limit, titulo=titulo)
 
 @router.put("/{cliente_id}", status_code=status.HTTP_200_OK)
 async def update_cliente(cliente_id: int, cliente_data: dict, session: Session = Depends(get_session)):
