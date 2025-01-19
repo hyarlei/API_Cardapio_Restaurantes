@@ -7,4 +7,4 @@ class Cliente(SQLModel, table=True):
     nome: str
     email: str
     telefone: str
-    pedidos: List["PedidoItem"] = Relationship(back_populates="cliente")
+    pedidos: List["PedidoItem"] = Relationship(back_populates="cliente", cascade_delete=True)

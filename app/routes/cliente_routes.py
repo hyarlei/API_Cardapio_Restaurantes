@@ -28,10 +28,11 @@ async def read_cliente(cliente_id: int, session: Session = Depends(get_session))
 async def read_clientes(
     offset: int = Query(0, ge=0),
     limit: int = Query(10, le=100),
-    titulo: str = Query(None),
+    order_by: str = Query("id"),
+    nome: str = Query(None),
     session: Session = Depends(get_session)
 ):
-    return listar_clientes(session, offset=offset, limit=limit, titulo=titulo)
+    return listar_clientes(session, offset=offset, limit=limit, nome=nome, order_by=order_by)
 
 @router.put("/{cliente_id}", status_code=status.HTTP_200_OK)
 async def update_cliente(cliente_id: int, cliente_data: dict, session: Session = Depends(get_session)):

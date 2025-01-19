@@ -18,12 +18,10 @@ Uma API desenvolvida para gerenciar cardápios de restaurantes, clientes e pedid
 
 ## **Funcionalidades**
 
-- Gerenciar **cardápios** (criar, listar, atualizar e excluir pratos).
-- Gerenciar **clientes** (adicionar e listar clientes).
+- Gerenciar **menu** (criar, listar, atualizar e excluir pratos).
+- Gerenciar **clientes** (adicionar e listar clientes, excluir).
 - Registrar e listar **pedidos** com cálculo automático do valor total.
-- Manipulação de arquivos CSV e compactação para ZIP.
 - Persistência de dados em **SQLite**.
-- Download e verificação de integridade de arquivos.
 
 ---
 
@@ -33,7 +31,6 @@ Uma API desenvolvida para gerenciar cardápios de restaurantes, clientes e pedid
 - **FastAPI**: Framework para criação da API.
 - **Uvicorn**: Servidor ASGI para rodar a aplicação.
 - **SQLite**: Banco de dados para persistência.
-- **CSV**: Para armazenar dados relacionados ao cardápio.
 - **dotenv**: Para gerenciamento de variáveis de ambiente.
 
 ---
@@ -97,20 +94,24 @@ Certifique-se de ter instalado:
 ```
 .
 ├── app
-│   ├── data
-│   │   ├── menu.csv          # Dados do cardápio
-|   |   ├── database.db       # Banco de dados SQLite
 │   ├── models
-│   │   ├── menu.py           # Modelo de dados do cardápio
+│   │   ├── menu.py            # Modelo de dados do cardápio
+│   │   ├── pedido.py          # Modelo de dados do pedidos
+│   │   ├── cliente.py         # Modelo de dados do clientes
 │   ├── routes
-│   │   ├── menu_routes.py    # Rotas relacionadas ao cardápio
+│   │   ├── menu_routes.py     # Rotas relacionadas ao menu
+│   │   ├── pedido_routes.py   # Rotas relacionadas ao pedido
+│   │   ├── cliente_routes.py  # Rotas relacionadas ao cliente
 │   ├── services
-│   │   ├── csv_service.py    # Serviço de manipulação de arquivos CSV
-│   ├── db.py                 # Configuração do banco de dados
-│   └── main.py               # Ponto de entrada da aplicação
-├── requirements.txt          # Dependências do projeto
-├── README.md                 # Documentação do projeto
-└── .env                      # Variáveis de ambiente
+│   │   ├── menu_service.py    # Serviço de manipulação
+│   │   ├── pedido_service.py  # Serviço de manipulação de arquivos CSV
+│   │   ├── cliente_service.py # Serviço de manipulação de arquivos CSV
+│   ├── db.py                  # Configuração do banco de dados
+│   └── main.py                # Ponto de entrada da aplicação
+├── requirements.txt           # Dependências do projeto
+├── database.db                # Banco de dados SQLite
+├── README.md                  # Documentação do projeto
+└── .env                       # Variáveis de ambiente
 ```
 
 ---
@@ -128,17 +129,22 @@ Certifique-se de ter instalado:
 
 ### **Clientes**
 
+
 | Método | Endpoint         | Descrição                      |
 |--------|------------------|--------------------------------|
-| GET    | `/clientes`      | Listar todos os clientes.      |
-| POST   | `/clientes`      | Adicionar um cliente.          |
+| GET    | `/cliente`          | Listar todos os itens do cardápio. |
+| POST   | `/cliente`          | Adicionar um item ao cardápio. |
+| PUT    | `/cliente/{id}`     | Atualizar um item do cardápio. |
+| DELETE | `/cliente/{id}`     | Excluir um item do cardápio.   |
 
 ### **Pedidos**
 
 | Método | Endpoint         | Descrição                      |
 |--------|------------------|--------------------------------|
-| GET    | `/pedidos`       | Listar todos os pedidos.       |
-| POST   | `/pedidos`       | Criar um novo pedido.          |
+| GET    | `/pedido`          | Listar todos os itens do cardápio. |
+| POST   | `/pedido`          | Adicionar um item ao cardápio. |
+| PUT    | `/pedido/{id}`     | Atualizar um item do cardápio. |
+| DELETE | `/pedido/{id}`     | Excluir um item do cardápio.   |
 
 ---
 

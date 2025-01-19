@@ -1,11 +1,12 @@
 Hyarlei:
-    - Arquitetura
-    - CREATE
-    - RETRIEVE
-    - F4
-
-Adailton:
-    - UPDATE
-    - DELETE
-    - Compactar CSV
-    - F6
+    - Modelagem de Dados
+    - Criação de Pedido
+    - Listagem de Pedidos
+    - Busca de Pedidos
+    - Atualização de Pedidos
+    - Remoção de Pedidos
+    - Criação de Itens do Menu
+    - Listagem de Itens do Menu
+    - Busca de Itens do Menu
+    - Atualização de Itens do Menu
+    - Correções e Ajustes

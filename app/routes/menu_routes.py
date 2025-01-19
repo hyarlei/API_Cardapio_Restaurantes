@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, status, HTTPException, Query
 from sqlmodel import Session
-from datetime import datetime
 from app.db import get_session
 from app.services.menu_sevice import (
     criar_menu_item,
@@ -26,16 +25,14 @@ async def read_menu(item_id: int, session: Session = Depends(get_session)):
     return item
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=list[Menu])
-async def read_clientes(
+async def read_menu_items(
     offset: int = Query(0, ge=0),
     limit: int = Query(10, le=100),
-    ano: int = Query(None, ge=1900, le=datetime.now().year),
     titulo: str = Query(None),
-    tipo: str = Query(None),
-    order_by: str = Query("id"),
+    ano: int = Query(None),
     session: Session = Depends(get_session)
 ):
-    return listar_menu_items(session, offset=offset, limit=limit, ano=ano, titulo=titulo, tipo=tipo, order_by=order_by)
+    return listar_menu_items(session, offset=offset, limit=limit, titulo=titulo, ano=ano)
 
 @router.put("/{item_id}", status_code=status.HTTP_200_OK)
 async def update_menu(item_id: int, menu_data: dict, session: Session = Depends(get_session)):

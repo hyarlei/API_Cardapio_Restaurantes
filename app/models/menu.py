@@ -1,6 +1,7 @@
-from typing import List, Optional
-from sqlmodel import Field, Relationship, SQLModel
+from typing import Optional
+from sqlmodel import Field, SQLModel
 from enum import Enum
+from datetime import datetime
 
 class TipoMenu(str, Enum):
     entrada = "entrada"
@@ -17,3 +18,4 @@ class Menu(SQLModel, table=True):
     preco: float
     tipo: str
     disponivel: bool
+    data: datetime

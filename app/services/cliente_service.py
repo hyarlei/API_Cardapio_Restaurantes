@@ -1,28 +1,25 @@
-from fastapi import HTTPException, Query
+from fastapi import HTTPException
 from sqlmodel import Session, select
 from app.models.cliente import Cliente
-from app.models.pedido import Pedido
-from app.models.menu import Menu
-from app.db import engine
+from app.models.pedido import Pedido, PedidoItem
 
 def criar_cliente(session: Session, cliente_data: dict):
     try:
-        with Session(engine) as session:
             cliente = Cliente(**cliente_data)
             session.add(cliente)
             session.commit()
             session.refresh(cliente)
-        return cliente
+            return cliente
     except Exception as e:
-        session.rollback()
         raise HTTPException(status_code=400, detail=f"Erro ao criar cliente: {e}")
 
-def listar_clientes(session: Session, offset: int = 0, titulo: str = None, limit: int = Query(default=10, le=100)):
+def listar_clientes(session: Session, offset: int = 0, nome: str = None, limit: int =100, order_by: str = "id"):
     try:
-        with Session(engine) as session:
             statement = select(Cliente).offset(offset).limit(limit)
-            if titulo:
-                statement = statement.where(Cliente.nome.contains(titulo))
+            if nome:
+                statement = statement.where(Cliente.nome.contains(nome))
+            if order_by:
+                statement = statement.order_by(getattr(Cliente, order_by))
             clientes = session.exec(statement).all()
             return clientes
     except Exception as e:
@@ -30,40 +27,33 @@ def listar_clientes(session: Session, offset: int = 0, titulo: str = None, limit
 
 def buscar_cliente(cliente_id: int, session: Session):
     try:
-        with Session(engine) as session:
             cliente = session.get(Cliente, cliente_id)
             if not cliente:
                 raise HTTPException(status_code=404, detail="Cliente não encontrado")
             return cliente
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao buscar cliente: {e}")
-
+    
 def atualizar_cliente(cliente_id: int, cliente_data: dict, session: Session):
     try:
-        with Session(engine) as session:
             cliente = session.exec(select(Cliente).where(Cliente.id == cliente_id)).first()
             for key, value in cliente_data.items():
                 setattr(cliente, key, value)
             session.add(cliente)
             session.commit()
             session.refresh(cliente)
-        return cliente
+            return cliente
     except Exception as e:
-        session.rollback()
         raise HTTPException(status_code=400, detail=f"Erro ao atualizar cliente: {e}")
 
 def remover_cliente(cliente_id: int, session: Session):
     try:
-        with Session(engine) as session:
-            # Excluir os itens associados aos pedidos do cliente
-            pedidos = session.query(Pedido).filter(Pedido.cliente_id == cliente_id).all()
+            pedidos = session.query(Pedido).join(PedidoItem).filter(PedidoItem.cliente_id == cliente_id).all()
             for pedido in pedidos:
-                session.query(Menu).filter(Menu.pedido_id == pedido.id).delete()
+                session.query(PedidoItem).filter(PedidoItem.pedido_id == pedido.id).delete()
             
-            # Excluir os pedidos associados ao cliente
-            session.query(Pedido).filter(Pedido.cliente_id == cliente_id).delete()
+            session.query(Pedido).filter(Pedido.id.in_([pedido.id for pedido in pedidos])).delete()
             
-            # Excluir o cliente
             cliente = session.get(Cliente, cliente_id)
             if not cliente:
                 raise HTTPException(status_code=404, detail="Cliente não encontrado")
@@ -71,5 +61,4 @@ def remover_cliente(cliente_id: int, session: Session):
             session.commit()
             return cliente
     except Exception as e:
-        session.rollback()
         raise HTTPException(status_code=400, detail=f"Erro ao remover cliente: {e}")

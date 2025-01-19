@@ -14,6 +14,6 @@ class PedidoItem(SQLModel, table=True):
 
 class Pedido(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    data: datetime
     total: Optional[float] = None
-    pedido_items: List[PedidoItem] = Relationship()
+    pedido_items: List[PedidoItem] = Relationship(cascade_delete=True)
+    data: datetime
