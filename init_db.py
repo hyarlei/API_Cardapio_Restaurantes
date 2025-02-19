@@ -1,8 +1,18 @@
-from app.db import init_db
+from motor.motor_asyncio import AsyncIOMotorClient
+from beanie import init_beanie
+from app.models.modelagem import Cliente, Menu, Pedido
+import asyncio
+from dotenv import load_dotenv
+import os
 
-def main():
-    init_db()
-    print("Banco de dados inicializado com sucesso!")
+load_dotenv()
 
-if __name__ == "__main__":
-    main()
+MONGO_URI = os.getenv("MONGO_URI")
+DB_NAME = "API_Cardapio_Restaurante"
+
+client = AsyncIOMotorClient(MONGO_URI)
+db = client.get_database(DB_NAME)
+
+async def init_db():
+    await init_beanie(database=db, document_models=[Cliente, Menu, Pedido])
+    print("Banco de dados conectado com sucesso!")

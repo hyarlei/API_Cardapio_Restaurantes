@@ -1,98 +1,81 @@
 from fastapi import HTTPException
-from sqlmodel import Session, select
-from app.models.pedido import Pedido, PedidoItem
-from app.models.menu import Menu
-from app.models.cliente import Cliente
-from datetime import datetime
+from app.models.modelagem import Pedido, Cliente, Menu
+from bson import ObjectId
 
-def criar_pedido(session: Session, pedido_data: dict):
-    try:
-        itens_data = pedido_data.pop("itens")
-        
-        pedido_data["data"] = datetime.fromisoformat(pedido_data["data"])
-        
-        pedido = Pedido(**pedido_data)
-        session.add(pedido)
-        session.commit()
-        
-        total = 0   
-        for item in itens_data:
-            menu = session.get(Menu, item["menu_id"])
-            cliente = session.get(Cliente, item["cliente_id"])
-            if not menu:
-                raise HTTPException(status_code=404, detail=f"Item do menu com ID {item['menu_id']} não encontrado")
+async def criar_pedido(pedido_data: dict):
+    # Verifica se o Cliente existe
+    cliente = await Cliente.get(ObjectId(pedido_data["cliente_id"]))
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
 
-            pedido_item = PedidoItem(
-                cliente_id=cliente.id,
-                pedido_id=pedido.id,
-                menu_id=menu.id,
-                quantidade=item["quantidade"]
-            )
-            session.add(pedido_item)
+    # Verifica se os Itens existem
+    itens_existentes = []
+    for item_id in pedido_data["itens_ids"]:
+        item = await Menu.get(ObjectId(item_id))
+        if not item:
+            raise HTTPException(status_code=404, detail=f"Item {item_id} não encontrado")
+        itens_existentes.append(item_id)  # Armazena apenas os IDs
 
-           
-            total += menu.preco * item["quantidade"]
+    # Cria o Pedido com os IDs
+    pedido = Pedido(
+        cliente_id=pedido_data["cliente_id"],
+        itens_ids=itens_existentes,
+        status=pedido_data.get("status", "pendente")
+    )
+    await pedido.insert()
+    return pedido
 
-        pedido.total = total
-        session.commit()
-        session.refresh(pedido)
+async def listar_pedidos():
+    pedidos = await Pedido.find(fetch_links=True).to_list()
 
-        return {
-            "id": pedido.id,
-            "data": pedido.data,
-            "total": pedido.total,
-            "itens": [{"menu_id": item["menu_id"], "quantidade": item["quantidade"]} for item in itens_data]
-        }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Erro ao criar pedido: {e}")
+    # Enriquecer os pedidos com os dados completos do Cliente e dos Itens
+    pedidos_completos = []
+    for pedido in pedidos:
+        cliente = await Cliente.get(ObjectId(pedido.cliente_id))
+        itens = [await Menu.get(ObjectId(item_id)) for item_id in pedido.itens_ids]
 
-def listar_pedidos(session: Session, offset: int = 0, ano: int = None, limit: int = 100, order_by: str = "id"):
-    try:
-            statement = select(Pedido).offset(offset).limit(limit)
-            if ano:
-                statement = statement.where(Pedido.data.like(f"{ano}%"))
-            if order_by:
-                statement = statement.order_by(getattr(Pedido, order_by))
-            pedidos = session.exec(statement).all()
-            return pedidos
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar pedidos: {e}")
+        pedidos_completos.append({
+            "id": str(pedido.id),
+            "cliente": cliente.dict() if cliente else None,
+            "itens": [item.dict() for item in itens if item],
+            "data_pedido": pedido.data_pedido,
+            "status": pedido.status
+        })
     
-def buscar_pedido(session: Session, pedido_id: int):
-    try:
-            statement = select(Pedido).where(Pedido.id == pedido_id)
-            pedido = session.exec(statement).first()
-            if not pedido:
-                raise HTTPException(status_code=404, detail="Pedido não encontrado")
-            return pedido
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao buscar pedido: {e}")
+    return pedidos_completos
 
-def atualizar_pedido(pedido_id: int, pedido_data: dict, session: Session):
-    try:
-        pedido = session.get(Pedido, pedido_id)
-        if not pedido:
-            raise HTTPException(status_code=404, detail="Pedido não encontrado")
-        
-        for key, value in pedido_data.items():
-            if key != "itens" and hasattr(pedido, key):
-                setattr(pedido, key, value)
-        
-        session.commit()
-        return pedido
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Erro ao atualizar pedido: {e}")
+async def buscar_pedido(pedido_id: str):
+    pedido = await Pedido.get(ObjectId(pedido_id), fetch_links=True)
+    if not pedido:
+        raise HTTPException(status_code=404, detail="Pedido não encontrado")
 
-def remover_pedido(pedido_id: int, session: Session):
-    try:
-        pedido = session.get(Pedido, pedido_id)
-        if not pedido:
-            raise HTTPException(status_code=404, detail="Pedido não encontrado")
+    # Buscar dados completos do Cliente e dos Itens
+    cliente = await Cliente.get(ObjectId(pedido.cliente_id))
+    itens = [await Menu.get(ObjectId(item_id)) for item_id in pedido.itens_ids]
 
-        session.delete(pedido)
-        session.commit()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Erro ao remover pedido: {e}")
+    return {
+        "id": str(pedido.id),
+        "cliente": cliente.dict() if cliente else None,
+        "itens": [item.dict() for item in itens if item],
+        "data_pedido": pedido.data_pedido,
+        "status": pedido.status
+    }
+
+async def atualizar_pedido(pedido_id: str, pedido_data: dict):
+    pedido = await Pedido.get(ObjectId(pedido_id))
+    if not pedido:
+        raise HTTPException(status_code=404, detail="Pedido não encontrado")
+
+    for key, value in pedido_data.items():
+        setattr(pedido, key, value)
+
+    await pedido.save()
+    return pedido
+
+async def remover_pedido(pedido_id: str):
+    pedido = await Pedido.get(ObjectId(pedido_id))
+    if not pedido:
+        raise HTTPException(status_code=404, detail="Pedido não encontrado")
     
+    await pedido.delete()
+    return {"message": "Pedido removido com sucesso"}

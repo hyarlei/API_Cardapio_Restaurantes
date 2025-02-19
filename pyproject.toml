@@ -7,5 +7,6 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.115.4",
     "pandas>=2.2.3",
+    "python-dotenv>=1.0.1",
     "uvicorn>=0.32.0",
 ]

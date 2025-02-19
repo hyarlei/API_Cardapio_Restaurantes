@@ -10,3 +10,4 @@ wheels/
 .venv
 venv/.env
 .env
+venv
