@@ -3,7 +3,6 @@ from app.routes.pedido_routes import router as pedido_router
 from app.routes.menu_routes import router as menu_router
 from fastapi import FastAPI
 from init_db import init_db
-import asyncio
 
 
 app = FastAPI()

@@ -1,6 +1,6 @@
 # **API de Cardápio de Restaurantes**
 
-Uma API desenvolvida para gerenciar cardápios de restaurantes, clientes e pedidos. Permite a criação, leitura, atualização e exclusão (CRUD) de dados, com armazenamento em banco de dados SQLite e manipulação de arquivos CSV para persistência.
+Uma API desenvolvida para gerenciar cardápios de restaurantes, clientes e pedidos. Permite a criação, leitura, atualização e exclusão (CRUD) de dados, com armazenamento em banco de dados MongoDB e manipulação de dados usando Beanie ODM.
 
 ---
 
@@ -70,7 +70,8 @@ Certifique-se de ter instalado:
 4. Configure o ambiente criando um arquivo `.env` na raiz do projeto:
 
    ```env
-   DATABASE_URL=sqlite:///./database.db
+   MONGO_URI=sua_uri_do_mongodb
+   DB_NAME=API_Cardapio_Restaurante
    ```
 
 ---
@@ -95,21 +96,18 @@ Certifique-se de ter instalado:
 .
 ├── app
 │   ├── models
-│   │   ├── menu.py            # Modelo de dados do cardápio
-│   │   ├── pedido.py          # Modelo de dados do pedidos
-│   │   ├── cliente.py         # Modelo de dados do clientes
+│   │   ├── modelagem.py       # Modelos de dados (Cliente, Menu, Pedido)
 │   ├── routes
 │   │   ├── menu_routes.py     # Rotas relacionadas ao menu
 │   │   ├── pedido_routes.py   # Rotas relacionadas ao pedido
 │   │   ├── cliente_routes.py  # Rotas relacionadas ao cliente
 │   ├── services
-│   │   ├── menu_service.py    # Serviço de manipulação
-│   │   ├── pedido_service.py  # Serviço de manipulação de arquivos CSV
-│   │   ├── cliente_service.py # Serviço de manipulação de arquivos CSV
+│   │   ├── menu_service.py    # Serviço de manipulação do menu
+│   │   ├── pedido_service.py  # Serviço de manipulação de pedidos
+│   │   ├── cliente_service.py # Serviço de manipulação de clientes
 │   ├── db.py                  # Configuração do banco de dados
 │   └── main.py                # Ponto de entrada da aplicação
 ├── requirements.txt           # Dependências do projeto
-├── database.db                # Banco de dados SQLite
 ├── README.md                  # Documentação do projeto
 └── .env                       # Variáveis de ambiente
 ```
@@ -118,7 +116,7 @@ Certifique-se de ter instalado:
 
 ## **Rotas da API**
 
-### **Cardápio**
+### **Menu**
 
 | Método | Endpoint         | Descrição                      |
 |--------|------------------|--------------------------------|

@@ -1,7 +1,5 @@
 from fastapi import HTTPException
 from app.models.modelagem import Menu
-from typing import List, Optional
-from beanie import PydanticObjectId
 from pymongo import ASCENDING
 
 async def criar_menu(menu_data: dict):
@@ -21,7 +19,7 @@ async def listar_menus(offset: int = 0, limit: int = 10, nome: str = None):
 
         pipeline.append({
             "$project": {
-                "_id": {"$toString": "$_id"},  # Converte o ID para string
+                "_id": {"$toString": "$_id"},
                 "nome": 1,
                 "descricao": 1,
                 "preco": 1,

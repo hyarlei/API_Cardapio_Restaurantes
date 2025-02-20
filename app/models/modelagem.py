@@ -1,10 +1,9 @@
 from beanie import Document
-from pydantic import BaseModel
 from typing import List, Optional, Literal
-from pydantic import BaseModel, Field
+from pydantic import Field
 from datetime import datetime
 
-class Cliente(Document):
+class Cliente(Document): 
     nome: str
     email: str
     telefone: Optional[str] = None

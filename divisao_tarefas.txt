@@ -1,12 +1,25 @@
 Hyarlei:
-    - Modelagem de Dados
+    - Modelagem de Banco
+    --------------------
     - Criação de Pedido
     - Listagem de Pedidos
     - Busca de Pedidos
     - Atualização de Pedidos
     - Remoção de Pedidos
+    --------------------
     - Criação de Itens do Menu
     - Listagem de Itens do Menu
     - Busca de Itens do Menu
     - Atualização de Itens do Menu
+    - Remoção de Menu
+    - Paginação e Aggregation Pipelines
+    --------------------
+    - Criação de Itens do Cliente
+    - Listagem de Itens do Cliente
+    - Busca de Itens do Cliente
+    - Atualização de Itens do Cliente
+    - Remoção de Cliente
+    --------------------
+    - Consultas Avançadas com Aggregation Pipelines
+    --------------------
     - Correções e Ajustes

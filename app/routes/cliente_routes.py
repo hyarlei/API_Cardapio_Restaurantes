@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter
 from app.models.modelagem import Cliente
 from app.services.cliente_service import criar_cliente, listar_clientes, buscar_cliente, atualizar_cliente, remover_cliente
 
