@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, Query
+from typing import List, Optional
 from app.models.modelagem import Menu
 from app.services.menu_service import criar_menu, listar_menus, buscar_menu, atualizar_menu, remover_menu
 
@@ -12,16 +13,16 @@ async def create_menu(menu: Menu):
 async def get_menu(menu_id: str):
     return await buscar_menu(menu_id)
 
-@router.get("/")
+@router.get("/", response_model=List[Menu])
 async def get_all_menus(
     offset: int = Query(0, ge=0),
     limit: int = Query(10, le=100),
-    nome: str = Query(None),
+    nome: Optional[str] = Query(default=None),
 ):
     return await listar_menus(offset=offset, limit=limit, nome=nome)
 
 @router.put("/{menu_id}")
-async def update_menu(menu_id: str, menu: dict):#mudei pra vim dict, qualquer coisa mudo de volta para o paranetro menu: Menu
+async def update_menu(menu_id: str, menu: dict):#mudei pra dict, qualquer coisa mudo de volta para o paranetro menu: Menu
     return await atualizar_menu(menu_id, menu.dict())
 
 @router.delete("/{menu_id}")

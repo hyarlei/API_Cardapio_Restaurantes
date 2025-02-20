@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from app.models.modelagem import Menu
-from typing import List
+from typing import List, Optional
 
 async def criar_menu(menu_data: dict):
     try:
@@ -10,15 +10,17 @@ async def criar_menu(menu_data: dict):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao criar menu: {e}")
 
-async def listar_menus(offset: int = 0, limit: int = 100, nome: str = None):
+async def listar_menus(offset: int = 0, limit: int = 10, nome: Optional[str] = None):
     try:
-        query = Menu.find()
+        filtros = {}
+
         if nome:
-            query = query.find(Menu.nome.contains(nome))
-        menus = await query.skip(offset).limit(limit).to_list()
+            filtros["nome"] = {"$regex": nome, "$options": "i"}  # Busca case-insensitive
+
+        menus = await Menu.find(filtros).skip(offset).limit(limit).to_list()
         return menus
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar menus: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao listar menus: {str(e)}")
 
 async def buscar_menu(menu_id: str):
     try:
