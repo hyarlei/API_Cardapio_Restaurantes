@@ -1,6 +1,8 @@
 from fastapi import HTTPException
 from app.models.modelagem import Menu
 from typing import List, Optional
+from beanie import PydanticObjectId
+from pymongo import ASCENDING
 
 async def criar_menu(menu_data: dict):
     try:
@@ -10,17 +12,32 @@ async def criar_menu(menu_data: dict):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao criar menu: {e}")
 
-async def listar_menus(offset: int = 0, limit: int = 10, nome: Optional[str] = None):
+async def listar_menus(offset: int = 0, limit: int = 10, nome: str = None):
     try:
-        filtros = {}
+        pipeline = []
 
         if nome:
-            filtros["nome"] = {"$regex": nome, "$options": "i"}  # Busca case-insensitive
+            pipeline.append({"$match": {"nome": {"$regex": nome, "$options": "i"}}})
 
-        menus = await Menu.find(filtros).skip(offset).limit(limit).to_list()
+        pipeline.append({
+            "$project": {
+                "_id": {"$toString": "$_id"},  # Converte o ID para string
+                "nome": 1,
+                "descricao": 1,
+                "preco": 1,
+                "tipo": 1
+            }
+        })
+
+        pipeline.append({"$sort": {"nome": ASCENDING}})
+        pipeline.append({"$skip": offset})
+        pipeline.append({"$limit": limit})
+
+        menus = await Menu.aggregate(pipeline).to_list()
+
         return menus
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar menus: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao listar menus: {e}")
 
 async def buscar_menu(menu_id: str):
     try:
