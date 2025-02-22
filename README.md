@@ -146,6 +146,18 @@ Certifique-se de ter instalado:
 
 ---
 
+## **Requisições**
+
+Criação de pedido:
+
+```
+{
+  "cliente_id": "id",
+  "itens_ids": ["id", "id"],
+  "status": "pendente"
+}
+```
+
 ## **Autores**
 
 - **Hyarlei Silva**  
