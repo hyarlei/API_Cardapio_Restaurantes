@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Query
 
@@ -16,15 +16,9 @@ router = APIRouter()
 
 @router.post("/", status_code=201)
 async def create_menu(menu: Menu):
-    return await criar_menu(menu.dict())
+    return await criar_menu(menu.model_dump())
 
-
-@router.get("/{menu_id}")
-async def get_menu(menu_id: str):
-    return await buscar_menu(menu_id)
-
-
-@router.get("/", response_model=List[Menu])
+@router.get("/")
 async def get_all_menus(
     offset: int = Query(0, ge=0),
     limit: int = Query(10, le=100),
@@ -33,11 +27,15 @@ async def get_all_menus(
     return await listar_menus(offset=offset, limit=limit, nome=nome)
 
 
+@router.get("/{menu_id}")
+async def get_menu(menu_id: str):
+    return await buscar_menu(menu_id)
+
+
 @router.put("/{menu_id}")
 async def update_menu(
-    menu_id: str, menu: dict
-):  # mudei pra dict, qualquer coisa mudo de volta para o paranetro menu: Menu
-    return await atualizar_menu(menu_id, menu.dict())
+    menu_id: str, menu: Menu):
+    return await atualizar_menu(menu_id, menu.model_dump())
 
 
 @router.delete("/{menu_id}")

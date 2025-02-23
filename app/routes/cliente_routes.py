@@ -1,4 +1,6 @@
-from fastapi import APIRouter
+from typing import Optional
+
+from fastapi import APIRouter, Query
 
 from app.models.modelagem import Cliente
 from app.services.cliente_service import (
@@ -14,7 +16,16 @@ router = APIRouter()
 
 @router.post("/", status_code=201)
 async def create_cliente(cliente: Cliente):
-    return await criar_cliente(cliente.dict())
+    return await criar_cliente(cliente.model_dump())
+
+
+@router.get("/")
+async def get_all_clientes(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(10, le=100),
+    nome: Optional[str] = Query(default=None),
+):
+    return await listar_clientes(offset=offset, limit=limit, nome=nome)
 
 
 @router.get("/{cliente_id}")
@@ -22,13 +33,8 @@ async def get_cliente(cliente_id: str):
     return await buscar_cliente(cliente_id)
 
 
-@router.get("/")
-async def get_all_clientes():
-    return await listar_clientes()
-
-
 @router.put("/{cliente_id}")
-async def update_cliente(cliente_id: str, cliente: dict):
+async def update_cliente(cliente_id: str, cliente: Cliente):
     return await atualizar_cliente(cliente_id, cliente)
 
 

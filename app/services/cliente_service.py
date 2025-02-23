@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from pymongo import ASCENDING
 
 from app.models.modelagem import Cliente
 
@@ -9,8 +10,35 @@ async def criar_cliente(cliente_data: dict):
     return cliente
 
 
-async def listar_clientes():
-    return await Cliente.find_all().to_list()
+async def listar_clientes(offset: int = 0, limit: int = 10, nome: str = None):
+    try:
+        pipeline = []
+
+        if nome:
+            pipeline.append({"$match": {"nome": {"$regex": nome, "$options": "i"}}})
+
+        pipeline.append(
+            {
+                "$project": {
+                    "_id": {"$toString": "$_id"},
+                    "nome": 1,
+                    "email": 1,
+                    "telefone": 1,
+                }
+            }
+        )
+
+        pipeline.append({"$sort": {"nome": ASCENDING}})
+        pipeline.append({"$skip": offset})
+        pipeline.append({"$limit": limit})
+
+        clientes = await Cliente.aggregate(pipeline).to_list()
+
+        if not clientes:
+            raise HTTPException(status_code=404, detail="Nenhum cliente encontrado")
+        return clientes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar clientes: {e}")
 
 
 async def buscar_cliente(cliente_id: str):

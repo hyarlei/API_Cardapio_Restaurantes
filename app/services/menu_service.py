@@ -28,6 +28,7 @@ async def listar_menus(offset: int = 0, limit: int = 10, nome: str = None):
                     "descricao": 1,
                     "preco": 1,
                     "tipo": 1,
+                    "disponivel": 1,
                 }
             }
         )
@@ -38,6 +39,8 @@ async def listar_menus(offset: int = 0, limit: int = 10, nome: str = None):
 
         menus = await Menu.aggregate(pipeline).to_list()
 
+        if not menus:
+            raise HTTPException(status_code=404, detail="Nenhum menu encontrado")
         return menus
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao listar menus: {e}")

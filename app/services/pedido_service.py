@@ -1,7 +1,9 @@
+import logging
 from datetime import datetime
 
 from bson import ObjectId
 from fastapi import HTTPException
+from pymongo import ASCENDING
 
 from app.models.modelagem import Cliente, Menu, Pedido
 
@@ -29,61 +31,67 @@ async def criar_pedido(pedido_data: dict):
     return pedido
 
 
-async def listar_pedidos():
-    pedidos = await Pedido.find(fetch_links=True).to_list()
+async def listar_pedidos(
+    offset: int = 0,
+    limit: int = 10,
+    cliente_nome: str = None,
+    data_inicio: str = None,
+    data_fim: str = None,
+):
+    try:
+        pipeline = []
 
-    pedidos_completos = []
-    for pedido in pedidos:
-        cliente = await Cliente.get(pedido.cliente_id)
-        itens = [await Menu.get(item_id) for item_id in pedido.itens_ids]
+        if cliente_nome:
+            pipeline.append(
+                {"$match": {"nome": {"$regex": cliente_nome, "$options": "i"}}}
+            )
 
-        cliente_dict = cliente.model_dump() if cliente else None
-        if cliente_dict:
-            cliente_dict["id"] = str(cliente.id)
+        if data_inicio or data_fim:
+            match_stage = {}
+            if data_inicio:
+                data_inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
+                match_stage["data_pedido"] = {"$gte": data_inicio_dt}
+            if data_fim:
+                data_fim_dt = datetime.strptime(data_fim, "%Y-%m-%d")
+                if "data_pedido" in match_stage:
+                    match_stage["data_pedido"]["$lte"] = data_fim_dt
+                else:
+                    match_stage["data_pedido"] = {"$lte": data_fim_dt}
+            pipeline.append({"$match": match_stage})
 
-        pedidos_completos.append(
+        pipeline.append(
             {
-                "id": str(pedido.id),
-                "cliente": cliente_dict,
-                "itens": [
-                    {
-                        "id": str(item.id),
-                        "nome": item.nome,
-                        "descricao": item.descricao,
-                        "preco": item.preco,
-                        "tipo": item.tipo,
-                        "disponivel": item.disponivel,
-                    }
-                    for item in itens if item
-                ],
-                "data_pedido": pedido.data_pedido,
-                "status": pedido.status,
+                "$project": {
+                    "_id": {"$toString": "$_id"},
+                    "cliente_id": 1,
+                    "itens_ids": 1,
+                    "data_pedido": 1,
+                    "status": 1,
+                }
             }
         )
 
-    return pedidos_completos
+        pipeline.append({"$sort": {"data_pedido": ASCENDING}})
+        pipeline.append({"$skip": offset})
+        pipeline.append({"$limit": limit})
+
+        pedidos = await Pedido.aggregate(pipeline).to_list()
+
+        return pedidos
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao listar pedidos: {e}")
 
 
 async def buscar_pedido(pedido_id: str):
     try:
-        print(f"Buscando pedido com ID: {pedido_id}")  # Depuração
-
-        # Tenta buscar o pedido pelo ID
         pedido = await Pedido.get(ObjectId(pedido_id), fetch_links=True)
         if not pedido:
-            print("Pedido não encontrado")  # Depuração
             raise HTTPException(status_code=404, detail="Pedido não encontrado")
 
-        print(f"Pedido encontrado: {pedido}")  # Depuração
-
-        # Tenta buscar o cliente associado ao pedido
         cliente = await Cliente.get(pedido.cliente_id)
-        print(f"Cliente encontrado: {cliente}")  # Depuração
 
         itens = [await Menu.get(item_id) for item_id in pedido.itens_ids]
-        print(f"Itens encontrados: {itens}")  # Depuração
 
-        # Converte o cliente para dicionário, se existir
         cliente_dict = cliente.model_dump() if cliente else None
         if cliente_dict:
             cliente_dict["id"] = str(cliente.id)
@@ -100,106 +108,14 @@ async def buscar_pedido(pedido_id: str):
                     "tipo": item.tipo,
                     "disponivel": item.disponivel,
                 }
-                for item in itens if item
+                for item in itens
+                if item
             ],
             "data_pedido": pedido.data_pedido,
             "status": pedido.status,
         }
     except Exception as e:
-        print(f"Erro ao buscar pedido: {e}")  # Depuração
         raise HTTPException(status_code=500, detail=f"Erro ao buscar pedido: {e}")
-
-
-async def listar_pedidos_por_data(data_inicio: str, data_fim: str):
-    try:
-        data_inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d")
-        data_fim_dt = datetime.strptime(data_fim, "%Y-%m-%d")
-
-        print(f"Buscando pedidos entre {data_inicio_dt} e {data_fim_dt}")
-
-        pedidos = await Pedido.find(
-            Pedido.data_pedido >= data_inicio_dt, Pedido.data_pedido <= data_fim_dt
-        ).to_list()
-
-        print(f"Pedidos encontrados: {len(pedidos)}")
-
-        pedidos_completos = []
-        for pedido in pedidos:
-            cliente = await Cliente.get(pedido.cliente_id)
-            itens = [await Menu.get(item_id) for item_id in pedido.itens_ids]
-
-            cliente_dict = cliente.model_dump() if cliente else None
-            if cliente_dict:
-                cliente_dict["id"] = str(cliente.id)
-
-            pedidos_completos.append(
-                {
-                    "id": str(pedido.id),
-                    "cliente": cliente_dict,
-                    "itens": [
-                        {
-                            "id": str(item.id),
-                            "nome": item.nome,
-                            "descricao": item.descricao,
-                            "preco": item.preco,
-                            "tipo": item.tipo,
-                            "disponivel": item.disponivel,
-                        }
-                        for item in itens if item
-                    ],
-                    "data_pedido": pedido.data_pedido,
-                    "status": pedido.status,
-                }
-            )
-
-        return pedidos_completos
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Erro ao listar pedidos por data: {e}"
-        )
-
-
-async def listar_pedidos_ordenados(campo: str, ordem: int):
-    try:
-        if ordem not in [1, -1]:
-            raise ValueError("Ordem deve ser 1 (ascendente) ou -1 (descendente)")
-
-        pedidos = await Pedido.find().sort([(campo, ordem)]).to_list()
-
-        pedidos_completos = []
-        for pedido in pedidos:
-            cliente = await Cliente.get(pedido.cliente_id)
-            itens = [await Menu.get(item_id) for item_id in pedido.itens_ids]
-
-            cliente_dict = cliente.model_dump() if cliente else None
-            if cliente_dict:
-                cliente_dict["id"] = str(cliente.id)
-
-            pedidos_completos.append(
-                {
-                    "id": str(pedido.id),
-                    "cliente": cliente_dict,
-                    "itens": [
-                        {
-                            "id": str(item.id),
-                            "nome": item.nome,
-                            "descricao": item.descricao,
-                            "preco": item.preco,
-                            "tipo": item.tipo,
-                            "disponivel": item.disponivel,
-                        }
-                        for item in itens if item
-                    ],
-                    "data_pedido": pedido.data_pedido,
-                    "status": pedido.status,
-                }
-            )
-
-        return pedidos_completos
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Erro ao listar pedidos ordenados: {e}"
-        )
 
 
 async def atualizar_pedido(pedido_id: str, pedido_data: dict):
@@ -236,29 +152,6 @@ async def pratos_mais_vendidos():
     return pratos
 
 
-async def clientes_vip():
-    try:
-        pedidos = await Pedido.find().to_list()
-        clientes = {}
-        for pedido in pedidos:
-            if pedido.cliente_id in clientes:
-                clientes[pedido.cliente_id] += sum(
-                    [(await Menu.get(item_id)).preco for item_id in pedido.itens_ids]
-                )
-            else:
-                clientes[pedido.cliente_id] = sum(
-                    [(await Menu.get(item_id)).preco for item_id in pedido.itens_ids]
-                )
-        clientes = [
-            {"cliente_id": str(cliente_id), "total_gasto": total_gasto}
-            for cliente_id, total_gasto in clientes.items()
-        ]
-        clientes.sort(key=lambda x: x["total_gasto"], reverse=True)
-        return clientes
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao listar clientes VIP: {e}")
-
-
 async def buscar_pedidos_por_texto(texto: str):
     pedidos = await Pedido.find().to_list()
 
@@ -271,33 +164,40 @@ async def buscar_pedidos_por_texto(texto: str):
         if cliente_dict:
             cliente_dict["id"] = str(cliente.id)
 
-        for item in itens:
+        itens_validos = []
+        for item_id, item in zip(pedido.itens_ids, itens):
+            if item is None:
+                logging.warning(f"Item com ID {item_id} não encontrado.")
+                continue  # Pula itens não encontrados
+
             if texto in item.nome or texto in item.descricao:
-                pedidos_completos.append(
+                itens_validos.append(
                     {
-                        "id": str(pedido.id),
-                        "cliente": cliente_dict,
-                        "itens": [
-                            {
-                                "id": str(item.id),
-                                "nome": item.nome,
-                                "descricao": item.descricao,
-                                "preco": item.preco,
-                                "tipo": item.tipo,
-                                "disponivel": item.disponivel,
-                            }
-                        ],
-                        "data_pedido": pedido.data_pedido,
-                        "status": pedido.status,
+                        "id": str(item.id),
+                        "nome": item.nome,
+                        "descricao": item.descricao,
+                        "preco": item.preco,
+                        "tipo": item.tipo,
+                        "disponivel": item.disponivel,
                     }
                 )
-                break
+
+        if itens_validos:
+            pedidos_completos.append(
+                {
+                    "id": str(pedido.id),
+                    "cliente": cliente_dict,
+                    "itens": itens_validos,
+                    "data_pedido": pedido.data_pedido,
+                    "status": pedido.status,
+                }
+            )
 
     return pedidos_completos
 
 
-async def listar_pedidos_com_detalhes():
-    pedidos = await Pedido.find().to_list()
+async def listar_pedidos_com_detalhes(offset: int = 0, limit: int = 10):
+    pedidos = await Pedido.find().skip(offset).limit(limit).to_list()
 
     pedidos_completos = []
     for pedido in pedidos:
@@ -321,7 +221,8 @@ async def listar_pedidos_com_detalhes():
                         "tipo": item.tipo,
                         "disponivel": item.disponivel,
                     }
-                    for item in itens if item
+                    for item in itens
+                    if item
                 ],
                 "data_pedido": pedido.data_pedido,
                 "status": pedido.status,
